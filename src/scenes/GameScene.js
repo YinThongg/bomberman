@@ -14,22 +14,27 @@ export default class GameScene extends Phaser.Scene {
     this.renderGrid();
 
     this.player1 = new Player(this, 1, 1, 0x2196f3);
+    this.player2 = new Player(this, GRID_COLS - 2, GRID_ROWS - 2, 0xe53935);
 
-    // createCursorKeys() binds arrow keys + shift/space into one object
-    this.cursors = this.input.keyboard.createCursorKeys();
+    // addKeys returns an object keyed by the names you pass in
+    this.keysP1 = this.input.keyboard.addKeys('I,J,K,L');
+    this.keysP2 = this.input.keyboard.addKeys('W,A,S,D');
   }
 
   update() {
-    const { up, down, left, right } = this.cursors;
-
-    // JustDown fires exactly once per key press regardless of how long the key is held.
-    // Without it, update() runs ~60×/sec and the player would teleport across the map.
     const JD = Phaser.Input.Keyboard.JustDown;
 
-    if (JD(left))  this.player1.tryMove(-1,  0);
-    if (JD(right)) this.player1.tryMove( 1,  0);
-    if (JD(up))    this.player1.tryMove( 0, -1);
-    if (JD(down))  this.player1.tryMove( 0,  1);
+    // Player 1 — IJKL (I=up, J=left, K=down, L=right)
+    if (JD(this.keysP1.J)) this.player1.tryMove(-1,  0);
+    if (JD(this.keysP1.L)) this.player1.tryMove( 1,  0);
+    if (JD(this.keysP1.I)) this.player1.tryMove( 0, -1);
+    if (JD(this.keysP1.K)) this.player1.tryMove( 0,  1);
+
+    // Player 2 — WASD
+    if (JD(this.keysP2.A)) this.player2.tryMove(-1,  0);
+    if (JD(this.keysP2.D)) this.player2.tryMove( 1,  0);
+    if (JD(this.keysP2.W)) this.player2.tryMove( 0, -1);
+    if (JD(this.keysP2.S)) this.player2.tryMove( 0,  1);
   }
 
   // Returns a 2D array [row][col] of TILE values describing the level layout.
