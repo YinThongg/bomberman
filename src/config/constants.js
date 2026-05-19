@@ -10,6 +10,7 @@ export const TILE = {
 
 export const COLORS = {
   FLOOR: 0x8bc34a,
+  FLOOR_ALT: 0x7cb342,   // slightly darker, used for checker pattern
   WALL: 0x455a64,
   SOFT_WALL: 0xa0522d,
   BACKGROUND: 0x1a1a2e,
