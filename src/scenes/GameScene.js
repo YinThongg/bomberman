@@ -1,4 +1,5 @@
 import { COLORS, GRID_COLS, GRID_ROWS, TILE_SIZE, TILE } from '../config/constants.js';
+import Player from '../entities/Player.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -11,6 +12,24 @@ export default class GameScene extends Phaser.Scene {
     // grid is stored on `this` so future methods (collision, explosions) can read it
     this.grid = this.buildLevel();
     this.renderGrid();
+
+    this.player1 = new Player(this, 1, 1, 0x2196f3);
+
+    // createCursorKeys() binds arrow keys + shift/space into one object
+    this.cursors = this.input.keyboard.createCursorKeys();
+  }
+
+  update() {
+    const { up, down, left, right } = this.cursors;
+
+    // JustDown fires exactly once per key press regardless of how long the key is held.
+    // Without it, update() runs ~60×/sec and the player would teleport across the map.
+    const JD = Phaser.Input.Keyboard.JustDown;
+
+    if (JD(left))  this.player1.tryMove(-1,  0);
+    if (JD(right)) this.player1.tryMove( 1,  0);
+    if (JD(up))    this.player1.tryMove( 0, -1);
+    if (JD(down))  this.player1.tryMove( 0,  1);
   }
 
   // Returns a 2D array [row][col] of TILE values describing the level layout.
