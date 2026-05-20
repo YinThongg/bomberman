@@ -8,6 +8,11 @@ export const TILE = {
   SOFT_WALL: 2,
 };
 
+export const POWERUP = {
+  EXTRA_BOMB: 'extra_bomb',
+  EXTRA_RANGE: 'extra_range',
+};
+
 export const COLORS = {
   FLOOR: 0x8bc34a,
   FLOOR_ALT: 0x7cb342,   // slightly darker, used for checker pattern

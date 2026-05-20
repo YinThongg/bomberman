@@ -1,7 +1,5 @@
 import { TILE_SIZE } from '../config/constants.js';
 
-const RADIUS = TILE_SIZE * 0.3;
-
 export default class Bomb {
   constructor(scene, gridCol, gridRow, owner, range = 1) {
     this.scene = scene;
@@ -12,49 +10,66 @@ export default class Bomb {
 
     const x = gridCol * TILE_SIZE + TILE_SIZE / 2;
     const y = gridRow * TILE_SIZE + TILE_SIZE / 2;
-    this.sprite = scene.add.circle(x, y, RADIUS, 0x111111);
+    this.sprite = scene.add.image(x, y, 'bomb').setDisplaySize(TILE_SIZE * 0.72, TILE_SIZE * 0.72);
 
-    // delayedCall fires after 3000 ms and is tied to the Phaser clock,
-    // so it respects scene pause/resume — unlike setTimeout which runs
-    // on the browser's JS event loop regardless of game state.
+    // Pulse animation signals the countdown; shrinks slightly then grows back.
+    this.pulseTween = scene.tweens.add({
+      targets: this.sprite,
+      displayWidth:  TILE_SIZE * 0.58,
+      displayHeight: TILE_SIZE * 0.58,
+      duration: 420,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    // delayedCall respects scene pause/resume — unlike setTimeout.
     this.timer = scene.time.delayedCall(3000, () => this.explode());
   }
 
   explode() {
-    // Cancel the countdown timer. If this bomb was chain-triggered by another
-    // explosion, its timer is still pending — removing it here ensures explode()
-    // can never be called a second time on the same bomb instance.
+    // Stop the pulse and cancel the countdown timer first.
+    // If this bomb was chain-triggered, its timer is still pending — removing
+    // it ensures explode() is never called twice on the same instance.
+    this.pulseTween.stop();
     this.timer.remove(false);
 
-    // Remove from the scene's map BEFORE walking the explosion tiles.
-    // This is the key to preventing infinite recursion: if a chain bomb's
-    // explosion reaches back to this tile, it will find nothing in the map
-    // and skip it. See explanation below.
+    // Remove from the scene map BEFORE walking explosion tiles — prevents
+    // infinite recursion if a chain blast reaches back to this tile.
     this.scene.onBombExploded(this);
-
     this.sprite.destroy();
 
     const tiles = this.scene.getExplosionTiles(this.col, this.row, this.range);
 
-    // Chain reaction: any bomb sitting on an explosion tile detonates now.
+    // Chain reaction: any bomb on an explosion tile detonates immediately.
     for (const { col, row } of tiles) {
       const chainBomb = this.scene.bombs.get(`${col},${row}`);
       if (chainBomb) chainBomb.explode();
     }
 
-    // Render an orange rectangle on every affected tile.
-    const rects = tiles.map(({ col, row }) => {
+    // Destroy power-ups caught in the blast before checking deaths.
+    for (const { col, row } of tiles) {
+      this.scene.destroyPowerUpAt(col, row);
+    }
+
+    this.scene.sound.play('snd_explode');
+
+    // Spawn explosion visuals over every affected tile.
+    const imgs = tiles.map(({ col, row }) => {
       const x = col * TILE_SIZE + TILE_SIZE / 2;
       const y = row * TILE_SIZE + TILE_SIZE / 2;
-      return this.scene.add.rectangle(x, y, TILE_SIZE, TILE_SIZE, 0xff6600);
+      return this.scene.add.image(x, y, 'explosion').setDisplaySize(TILE_SIZE, TILE_SIZE);
     });
 
-    // Check deaths after chain reactions are fully resolved and visuals are up.
     this.scene.checkPlayerDeaths(tiles);
 
-    // Remove explosion visuals after 500 ms.
-    this.scene.time.delayedCall(500, () => {
-      rects.forEach(r => r.destroy());
+    // Fade the explosion out after a short hold.
+    this.scene.time.delayedCall(300, () => {
+      this.scene.tweens.add({
+        targets: imgs,
+        alpha: 0,
+        duration: 200,
+        onComplete: () => imgs.forEach(img => img.destroy()),
+      });
     });
   }
 }
