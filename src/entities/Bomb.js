@@ -49,6 +49,9 @@ export default class Bomb {
       return this.scene.add.rectangle(x, y, TILE_SIZE, TILE_SIZE, 0xff6600);
     });
 
+    // Check deaths after chain reactions are fully resolved and visuals are up.
+    this.scene.checkPlayerDeaths(tiles);
+
     // Remove explosion visuals after 500 ms.
     this.scene.time.delayedCall(500, () => {
       rects.forEach(r => r.destroy());

@@ -28,25 +28,80 @@ export default class GameScene extends Phaser.Scene {
     // addKeys returns an object keyed by the names you pass in
     this.keysP1 = this.input.keyboard.addKeys('I,J,K,L,SPACE');
     this.keysP2 = this.input.keyboard.addKeys('W,A,S,D,SHIFT');
+    this.keyRestart = this.input.keyboard.addKey('R');
+
+    this.gameOver = false;
   }
 
   update() {
     const JD = Phaser.Input.Keyboard.JustDown;
 
-    // Player 1 — IJKL (I=up, J=left, K=down, L=right)
-    if (JD(this.keysP1.J)) this.player1.tryMove(-1,  0);
-    if (JD(this.keysP1.L)) this.player1.tryMove( 1,  0);
-    if (JD(this.keysP1.I)) this.player1.tryMove( 0, -1);
-    if (JD(this.keysP1.K)) this.player1.tryMove( 0,  1);
+    if (this.gameOver) {
+      if (JD(this.keyRestart)) this.scene.restart();
+      return;
+    }
 
-    // Player 2 — WASD + Shift to place bomb
-    if (JD(this.keysP2.A))     this.player2.tryMove(-1,  0);
-    if (JD(this.keysP2.D))     this.player2.tryMove( 1,  0);
-    if (JD(this.keysP2.W))     this.player2.tryMove( 0, -1);
-    if (JD(this.keysP2.S))     this.player2.tryMove( 0,  1);
-    if (JD(this.keysP2.SHIFT)) this.player2.placeBomb();
+    // Player 1 — IJKL + Space (only while alive)
+    if (this.player1.alive) {
+      if (JD(this.keysP1.J)) this.player1.tryMove(-1,  0);
+      if (JD(this.keysP1.L)) this.player1.tryMove( 1,  0);
+      if (JD(this.keysP1.I)) this.player1.tryMove( 0, -1);
+      if (JD(this.keysP1.K)) this.player1.tryMove( 0,  1);
+      if (JD(this.keysP1.SPACE)) this.player1.placeBomb();
+    }
 
-    if (JD(this.keysP1.SPACE)) this.player1.placeBomb();
+    // Player 2 — WASD + Shift (only while alive)
+    if (this.player2.alive) {
+      if (JD(this.keysP2.A))     this.player2.tryMove(-1,  0);
+      if (JD(this.keysP2.D))     this.player2.tryMove( 1,  0);
+      if (JD(this.keysP2.W))     this.player2.tryMove( 0, -1);
+      if (JD(this.keysP2.S))     this.player2.tryMove( 0,  1);
+      if (JD(this.keysP2.SHIFT)) this.player2.placeBomb();
+    }
+  }
+
+  // Called by Bomb.explode() after all chain explosions and visuals are ready.
+  // Kills any player standing on an explosion tile, then checks for game over.
+  // die() is guarded by player.alive so simultaneous hits are handled correctly.
+  checkPlayerDeaths(tiles) {
+    for (const { col, row } of tiles) {
+      if (this.player1.alive && this.player1.col === col && this.player1.row === row) {
+        this.player1.die();
+      }
+      if (this.player2.alive && this.player2.col === col && this.player2.row === row) {
+        this.player2.die();
+      }
+    }
+    this.checkGameOver();
+  }
+
+  // Inspects alive state and shows end-game UI if at least one player is dead.
+  // The gameOver guard makes it safe to call from multiple chain explosions.
+  checkGameOver() {
+    if (this.gameOver) return;
+    const p1Dead = !this.player1.alive;
+    const p2Dead = !this.player2.alive;
+    if (!p1Dead && !p2Dead) return;
+
+    this.gameOver = true;
+
+    const cx = (GRID_COLS * TILE_SIZE) / 2;
+    const cy = (GRID_ROWS * TILE_SIZE) / 2;
+    const message = (p1Dead && p2Dead) ? 'Draw!' : p1Dead ? 'Player 2 Wins!' : 'Player 1 Wins!';
+
+    this.add.text(cx, cy, message, {
+      fontSize: '52px',
+      color: '#ffffff',
+      stroke: '#000000',
+      strokeThickness: 6,
+    }).setOrigin(0.5);
+
+    this.add.text(cx, cy + 56, 'Press R to restart', {
+      fontSize: '22px',
+      color: '#cccccc',
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5);
   }
 
   // Called by Bomb.explode() to remove the bomb from the scene's map

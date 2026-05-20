@@ -10,11 +10,17 @@ export default class Player {
     this.row = gridRow;
     this.maxBombs = maxBombs;
     this.activeBombs = 0;
+    this.alive = true;
 
     const { x, y } = this.toPixel();
 
     // Phaser circle: centered at (x, y), radius, fill color
     this.sprite = scene.add.circle(x, y, RADIUS, color);
+  }
+
+  die() {
+    this.alive = false;
+    this.sprite.setVisible(false);
   }
 
   // Moves the sprite to match the current grid position.
@@ -27,11 +33,15 @@ export default class Player {
   // Attempts to move by (dx, dy) grid steps.
   // Reads the grid from the scene so Player never owns a grid reference directly.
   // Only FLOOR tiles are walkable — WALL and SOFT_WALL both block.
+  // Tiles occupied by a bomb also block movement (bombs are not in the grid).
   tryMove(dx, dy) {
     const targetCol = this.col + dx;
     const targetRow = this.row + dy;
 
-    if (this.scene.grid[targetRow][targetCol] === TILE.FLOOR) {
+    const gridBlocked = this.scene.grid[targetRow][targetCol] !== TILE.FLOOR;
+    const bombBlocked = this.scene.bombs.has(`${targetCol},${targetRow}`);
+
+    if (!gridBlocked && !bombBlocked) {
       this.col = targetCol;
       this.row = targetRow;
       this.updateVisualPosition();
