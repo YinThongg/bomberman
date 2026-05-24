@@ -1,0 +1,42 @@
+import Phaser from 'phaser';
+
+export default class BootScene extends Phaser.Scene {
+  constructor() {
+    super({ key: 'BootScene' });
+  }
+
+  preload() {
+    this.cameras.main.setBackgroundColor(0x1a1a2e);
+
+    const { width, height } = this.scale;
+    this.add
+      .text(width / 2, height / 2 - 32, 'Loading…', { fontSize: '22px', color: '#ffffff' })
+      .setOrigin(0.5);
+    const bar = this.add
+      .rectangle(width / 2 - width * 0.25, height / 2, 0, 10, 0xffffff)
+      .setOrigin(0, 0.5);
+    this.add.rectangle(width / 2, height / 2, width * 0.5, 10, 0x333333);
+    this.load.on('progress', (v: number) => bar.setSize(v * width * 0.5, 10));
+
+    this.load.image('tile_floor', 'assets/tiles/floor.png');
+    this.load.image('tile_floor_alt', 'assets/tiles/floor_alt.png');
+    this.load.image('tile_wall', 'assets/tiles/wall.png');
+    this.load.image('tile_soft_wall', 'assets/tiles/soft_wall.png');
+
+    this.load.image('player_blue', 'assets/sprites/player_blue.png');
+    this.load.image('player_red', 'assets/sprites/player_red.png');
+    this.load.image('bomb', 'assets/sprites/bomb.png');
+    this.load.image('explosion', 'assets/sprites/explosion.png');
+    this.load.image('powerup_bomb', 'assets/sprites/powerup_bomb.png');
+    this.load.image('powerup_range', 'assets/sprites/powerup_range.png');
+
+    this.load.audio('snd_place', 'assets/audio/bomb_place.wav');
+    this.load.audio('snd_explode', 'assets/audio/explosion.wav');
+    this.load.audio('snd_death', 'assets/audio/player_death.wav');
+    this.load.audio('snd_pickup', 'assets/audio/powerup_pickup.wav');
+  }
+
+  create() {
+    this.scene.start('TitleScene');
+  }
+}

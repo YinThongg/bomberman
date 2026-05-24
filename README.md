@@ -1,16 +1,22 @@
-# Bomberman (Phaser 3)
+# Oppenhomie (Bomberman)
 
-A local 2-player Bomberman clone built with [Phaser 3](https://phaser.io/).
+A local 2-player Bomberman clone built with [Phaser 3](https://phaser.io/), TypeScript, and Vite.
 
 ## Running the game
 
-You need a local HTTP server because browsers block ES modules from `file://` URLs.
-
 ```bash
-python3 -m http.server 8000
+npm install
+npm run dev
 ```
 
-Then open [http://localhost:8000](http://localhost:8000).
+Then open [http://localhost:5173](http://localhost:5173).
+
+To build for production:
+
+```bash
+npm run build
+npm run preview
+```
 
 ---
 
@@ -19,33 +25,46 @@ Then open [http://localhost:8000](http://localhost:8000).
 ```
 bomberman/
 ├── index.html
+├── package.json
+├── tsconfig.json
 ├── src/
-│   ├── main.js                  # Phaser config, registers scenes
-│   ├── config/constants.js      # Grid size, tile types, power-up types, colors
+│   ├── main.ts                   # Phaser config, registers scenes
+│   ├── config/constants.ts       # Grid size, tile types, power-up types, colors
 │   ├── scenes/
-│   │   ├── BootScene.js         # Loads all assets, then starts GameScene
-│   │   └── GameScene.js         # Game loop, grid, bombs, deaths, power-ups
+│   │   ├── BootScene.ts          # Loads all assets, then starts TitleScene
+│   │   ├── TitleScene.ts         # Mode select screen
+│   │   └── GameScene.ts          # Game loop, grid, bombs, deaths, power-ups
 │   └── entities/
-│       ├── Player.js            # Movement, bomb placement, power-up collection
-│       ├── Bomb.js              # Countdown, explosion rays, chain reactions
-│       └── PowerUp.js           # Spawned on soft-wall destruction
+│       ├── Player.ts             # Movement, bomb placement, power-up collection
+│       ├── Bomb.ts               # Countdown, explosion rays, chain reactions
+│       └── PowerUp.ts            # Spawned on soft-wall destruction
 └── assets/
-    ├── tiles/                   # 16×16 tile sprites (see setup below)
-    ├── sprites/                 # Character / bomb / explosion sprites
-    └── audio/                   # Sound effects (WAV)
+    ├── tiles/                    # 16×16 tile sprites (see setup below)
+    ├── sprites/                  # Character / bomb / explosion sprites
+    └── audio/                    # Sound effects (WAV)
 ```
+
+---
+
+## Game flow
+
+**Boot → Title (mode select) → Game**
+
+- Title screen: click **2P Battle** or press **Enter** to start
+- In-game: press **R** to restart the round
+- Click the **⌂** home icon (top-left) anytime to return to the title screen
 
 ---
 
 ## Controls
 
-| Action       | Player 1  | Player 2    |
-|--------------|-----------|-------------|
-| Move up      | I         | W           |
-| Move left    | J         | A           |
-| Move down    | K         | S           |
-| Move right   | L         | D           |
-| Place bomb   | Space     | Left Shift  |
+| Action       | Player 1    | Player 2  |
+|--------------|-------------|-----------|
+| Move up      | W           | I         |
+| Move left    | A           | J         |
+| Move down    | S           | K         |
+| Move right   | D           | L         |
+| Place bomb   | Left Shift  | Space     |
 | Restart      | R (either player) |     |
 
 ---
@@ -57,33 +76,31 @@ The game uses free CC0 assets. You need to download them once and place them in 
 ### 1. Tile sprites — Kenney "Tiny Dungeon"
 
 1. Go to **[kenney.nl/assets/tiny-dungeon](https://kenney.nl/assets/tiny-dungeon)** → Download (free, no account needed).
-2. Extract the ZIP. Inside you'll find a `Tilemap/` folder with a `tilemap_packed.png` and individual tile PNGs.
-3. Copy these files and **rename** them as shown:
+2. Extract the ZIP. Inside you'll find a `Tilemap/` folder with individual tile PNGs.
+3. Copy and rename:
 
-| File from pack (example names)    | Save as                      |
-|-----------------------------------|------------------------------|
-| A plain stone/dungeon floor tile  | `assets/tiles/floor.png`     |
-| A slightly different floor tile   | `assets/tiles/floor_alt.png` |
-| A solid stone wall tile           | `assets/tiles/wall.png`      |
-| A crate or wooden barrel tile     | `assets/tiles/soft_wall.png` |
+| File from pack              | Save as                      |
+|-----------------------------|------------------------------|
+| A plain floor tile          | `assets/tiles/floor.png`     |
+| A slightly different floor  | `assets/tiles/floor_alt.png` |
+| A solid stone wall tile     | `assets/tiles/wall.png`      |
+| A crate or barrel tile      | `assets/tiles/soft_wall.png` |
 
-The exact filenames in the pack may vary — just pick tiles that look right and rename them. All tiles are 16×16; the game scales them to 48×48 automatically.
+All tiles are 16×16; the game scales them to 48×48 automatically.
 
 ### 2. Character sprites — Kenney "Tiny Dungeon" (same pack)
 
-Inside the pack look for a `Characters/` folder. Pick two character sprites and save as:
+Pick two character sprites from the `Characters/` folder:
 
 | Save as                            |
 |------------------------------------|
 | `assets/sprites/player_blue.png`   |
 | `assets/sprites/player_red.png`    |
 
-Optionally tint or color them differently in an image editor to tell the players apart.
-
 ### 3. Bomb / explosion / power-up sprites — Kenney "Roguelike RPG Pack"
 
 1. Go to **[kenney.nl/assets/roguelike-rpg-pack](https://kenney.nl/assets/roguelike-rpg-pack)** → Download.
-2. Find sprites that fit and save them as:
+2. Find fitting sprites:
 
 | Save as                              | Suggested sprite             |
 |--------------------------------------|------------------------------|
@@ -92,24 +109,20 @@ Optionally tint or color them differently in an image editor to tell the players
 | `assets/sprites/powerup_bomb.png`    | A bag or extra-bomb icon     |
 | `assets/sprites/powerup_range.png`   | A lightning bolt or arrow    |
 
-All sprite sizes will be scaled automatically.
-
 ---
 
 ## Sound effects
 
-All four sounds can be **generated in 30 seconds** using [sfxr.me](https://sfxr.me) (free, runs in the browser, exports WAV):
+Generate using [sfxr.me](https://sfxr.me) (free, browser-based, exports WAV):
 
-| File to create                    | sfxr preset to use                |
+| File                              | sfxr preset                       |
 |-----------------------------------|-----------------------------------|
 | `assets/audio/bomb_place.wav`     | "Powerup" → tweak to be short     |
 | `assets/audio/explosion.wav`      | "Explosion"                       |
 | `assets/audio/player_death.wav`   | "Hit/Hurt"                        |
 | `assets/audio/powerup_pickup.wav` | "Powerup"                         |
 
-Alternatively, grab from **[Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds)** (also CC0).
-
-> **Note:** browsers require a user gesture before playing audio. Any keypress or click unlocks the audio context — all sounds will work normally once a player starts moving.
+Or grab from **[Kenney Interface Sounds](https://kenney.nl/assets/interface-sounds)** (CC0).
 
 ---
 

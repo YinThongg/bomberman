@@ -1,0 +1,29 @@
+{
+  "name": "bomberman",
+  "version": "1.0.0",
+  "description": "A local 2-player Bomberman clone built with [Phaser 3](https://phaser.io/).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YinThongg/bomberman.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/YinThongg/bomberman/issues"
+  },
+  "homepage": "https://github.com/YinThongg/bomberman#readme",
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14"
+  },
+  "dependencies": {
+    "phaser": "^4.1.0"
+  }
+}

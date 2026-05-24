@@ -1,7 +1,14 @@
-import { TILE_SIZE, POWERUP } from '../config/constants.js';
+import Phaser from 'phaser';
+import { TILE_SIZE, POWERUP, type PowerUpType } from '../config/constants';
 
 export default class PowerUp {
-  constructor(scene, col, row, type) {
+  scene: Phaser.Scene;
+  col: number;
+  row: number;
+  type: PowerUpType;
+  sprite: Phaser.GameObjects.Image;
+
+  constructor(scene: Phaser.Scene, col: number, row: number, type: PowerUpType) {
     this.scene = scene;
     this.col = col;
     this.row = row;
@@ -13,7 +20,6 @@ export default class PowerUp {
     this.sprite = scene.add.image(x, y, key).setDisplaySize(TILE_SIZE * 0.65, TILE_SIZE * 0.65);
   }
 
-  // Called when an explosion reaches this tile.
   collect() {
     this.sprite.destroy();
   }
