@@ -1,10 +1,17 @@
-import { COLORS, GRID_COLS, GRID_ROWS, TILE_SIZE, TILE, POWERUP } from '../config/constants.js';
-import Player from '../entities/Player.js';
-import PowerUp from '../entities/PowerUp.js';
+import {
+  COLORS,
+  GRID_COLS,
+  GRID_ROWS,
+  TILE_SIZE,
+  TILE,
+  POWERUP,
+} from "../config/constants.js";
+import Player from "../entities/Player.js";
+import PowerUp from "../entities/PowerUp.js";
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
-    super({ key: 'GameScene' });
+    super({ key: "GameScene" });
   }
 
   create() {
@@ -24,12 +31,12 @@ export default class GameScene extends Phaser.Scene {
     // bombs: "col,row" → Bomb — checked by Player.placeBomb() and cleaned up in onBombExploded()
     this.bombs = new Map();
 
-    this.player1 = new Player(this, 1, 1, 'player_blue');
-    this.player2 = new Player(this, GRID_COLS - 2, GRID_ROWS - 2, 'player_red');
+    this.player1 = new Player(this, 1, 1, "player_blue");
+    this.player2 = new Player(this, GRID_COLS - 2, GRID_ROWS - 2, "player_red");
 
-    this.keysP1 = this.input.keyboard.addKeys('I,J,K,L,SPACE');
-    this.keysP2 = this.input.keyboard.addKeys('W,A,S,D,SHIFT');
-    this.keyRestart = this.input.keyboard.addKey('R');
+    this.keysP1 = this.input.keyboard.addKeys("I,J,K,L,SPACE");
+    this.keysP2 = this.input.keyboard.addKeys("W,A,S,D,SHIFT");
+    this.keyRestart = this.input.keyboard.addKey("R");
 
     this.gameOver = false;
   }
@@ -44,19 +51,19 @@ export default class GameScene extends Phaser.Scene {
 
     // Player 1 — IJKL + Space (only while alive)
     if (this.player1.alive) {
-      if (JD(this.keysP1.J))     this.player1.tryMove(-1,  0);
-      if (JD(this.keysP1.L))     this.player1.tryMove( 1,  0);
-      if (JD(this.keysP1.I))     this.player1.tryMove( 0, -1);
-      if (JD(this.keysP1.K))     this.player1.tryMove( 0,  1);
+      if (JD(this.keysP1.J)) this.player1.tryMove(-1, 0);
+      if (JD(this.keysP1.L)) this.player1.tryMove(1, 0);
+      if (JD(this.keysP1.I)) this.player1.tryMove(0, -1);
+      if (JD(this.keysP1.K)) this.player1.tryMove(0, 1);
       if (JD(this.keysP1.SPACE)) this.player1.placeBomb();
     }
 
     // Player 2 — WASD + Shift (only while alive)
     if (this.player2.alive) {
-      if (JD(this.keysP2.A))     this.player2.tryMove(-1,  0);
-      if (JD(this.keysP2.D))     this.player2.tryMove( 1,  0);
-      if (JD(this.keysP2.W))     this.player2.tryMove( 0, -1);
-      if (JD(this.keysP2.S))     this.player2.tryMove( 0,  1);
+      if (JD(this.keysP2.A)) this.player2.tryMove(-1, 0);
+      if (JD(this.keysP2.D)) this.player2.tryMove(1, 0);
+      if (JD(this.keysP2.W)) this.player2.tryMove(0, -1);
+      if (JD(this.keysP2.S)) this.player2.tryMove(0, 1);
       if (JD(this.keysP2.SHIFT)) this.player2.placeBomb();
     }
   }
@@ -77,22 +84,34 @@ export default class GameScene extends Phaser.Scene {
     for (let row = 0; row < GRID_ROWS; row++) {
       grid[row] = [];
       for (let col = 0; col < GRID_COLS; col++) {
-        const onBorder = row === 0 || row === GRID_ROWS - 1 || col === 0 || col === GRID_COLS - 1;
+        const onBorder =
+          row === 0 ||
+          row === GRID_ROWS - 1 ||
+          col === 0 ||
+          col === GRID_COLS - 1;
         const isPillar = row % 2 === 0 && col % 2 === 0;
-        grid[row][col] = (onBorder || isPillar) ? TILE.WALL : TILE.FLOOR;
+        grid[row][col] = onBorder || isPillar ? TILE.WALL : TILE.FLOOR;
       }
     }
 
     const p2c = GRID_COLS - 2;
     const p2r = GRID_ROWS - 2;
     const safe = new Set([
-      '1,1', '2,1', '1,2',
-      `${p2c},${p2r}`, `${p2c - 1},${p2r}`, `${p2c},${p2r - 1}`,
+      "1,1",
+      "2,1",
+      "1,2",
+      `${p2c},${p2r}`,
+      `${p2c - 1},${p2r}`,
+      `${p2c},${p2r - 1}`,
     ]);
 
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
-        if (grid[row][col] === TILE.FLOOR && !safe.has(`${col},${row}`) && Math.random() < 0.7) {
+        if (
+          grid[row][col] === TILE.FLOOR &&
+          !safe.has(`${col},${row}`) &&
+          Math.random() < 0.7
+        ) {
           grid[row][col] = TILE.SOFT_WALL;
         }
       }
@@ -112,13 +131,18 @@ export default class GameScene extends Phaser.Scene {
         const x = col * TILE_SIZE + half;
         const y = row * TILE_SIZE + half;
         const tile = this.grid[row][col];
-        const floorKey = (row + col) % 2 === 0 ? 'tile_floor' : 'tile_floor_alt';
+        const floorKey =
+          (row + col) % 2 === 0 ? "tile_floor" : "tile_floor_alt";
 
         if (tile === TILE.WALL) {
-          this.add.image(x, y, 'tile_wall').setDisplaySize(TILE_SIZE, TILE_SIZE);
+          this.add
+            .image(x, y, "tile_wall")
+            .setDisplaySize(TILE_SIZE, TILE_SIZE);
         } else if (tile === TILE.SOFT_WALL) {
           this.add.image(x, y, floorKey).setDisplaySize(TILE_SIZE, TILE_SIZE);
-          const sprite = this.add.image(x, y, 'tile_soft_wall').setDisplaySize(TILE_SIZE, TILE_SIZE);
+          const sprite = this.add
+            .image(x, y, "tile_soft_wall")
+            .setDisplaySize(TILE_SIZE, TILE_SIZE);
           this.softWallSprites.set(`${col},${row}`, sprite);
         } else {
           this.add.image(x, y, floorKey).setDisplaySize(TILE_SIZE, TILE_SIZE);
@@ -129,15 +153,20 @@ export default class GameScene extends Phaser.Scene {
 
   // ── Explosion ────────────────────────────────────────────────────────────
 
-  // Returns an array of {col, row} for every tile the explosion reaches,
-  // destroying soft walls it hits as a side-effect.
+  // Returns { tiles, revealed } for every tile the explosion reaches.
+  //
+  //   tiles    — array of {col, row} the blast covers (used for visuals + deaths)
+  //   revealed — Set of "col,row" keys that were soft walls just destroyed by
+  //              this explosion. Power-ups spawned on these tiles must NOT be
+  //              immediately destroyed — they were hidden inside the wall.
   //
   // Stopping rules per ray:
   //   WALL      → stop, do NOT include (indestructible)
   //   SOFT_WALL → include, destroy it, then stop (consumed by blast)
   //   FLOOR     → include, keep walking
   getExplosionTiles(col, row, range) {
-    const tiles = [{ col, row }];
+    const tiles    = [{ col, row }];
+    const revealed = new Set();
     const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 
     for (const [dc, dr] of directions) {
@@ -150,7 +179,8 @@ export default class GameScene extends Phaser.Scene {
 
         if (tile === TILE.SOFT_WALL) {
           tiles.push({ col: nc, row: nr });
-          this.destroySoftWall(nc, nr);
+          this.destroySoftWall(nc, nr);   // may spawn a power-up here
+          revealed.add(`${nc},${nr}`);    // mark so Bomb skips it in destroyPowerUpAt
           break;
         }
 
@@ -158,7 +188,7 @@ export default class GameScene extends Phaser.Scene {
       }
     }
 
-    return tiles;
+    return { tiles, revealed };
   }
 
   // Updates grid data, removes the soft-wall sprite, and maybe spawns a power-up.
@@ -194,10 +224,18 @@ export default class GameScene extends Phaser.Scene {
   // die() is guarded by player.alive so simultaneous hits are safe.
   checkPlayerDeaths(tiles) {
     for (const { col, row } of tiles) {
-      if (this.player1.alive && this.player1.col === col && this.player1.row === row) {
+      if (
+        this.player1.alive &&
+        this.player1.col === col &&
+        this.player1.row === row
+      ) {
         this.player1.die();
       }
-      if (this.player2.alive && this.player2.col === col && this.player2.row === row) {
+      if (
+        this.player2.alive &&
+        this.player2.col === col &&
+        this.player2.row === row
+      ) {
         this.player2.die();
       }
     }
@@ -216,17 +254,26 @@ export default class GameScene extends Phaser.Scene {
 
     const cx = (GRID_COLS * TILE_SIZE) / 2;
     const cy = (GRID_ROWS * TILE_SIZE) / 2;
-    const message = (p1Dead && p2Dead) ? 'Draw!' : p1Dead ? 'Player 2 Wins!' : 'Player 1 Wins!';
+    const message =
+      p1Dead && p2Dead ? "Draw!" : p1Dead ? "Player 2 Wins!" : "Player 1 Wins!";
 
-    this.add.text(cx, cy, message, {
-      fontSize: '52px', color: '#ffffff',
-      stroke: '#000000', strokeThickness: 6,
-    }).setOrigin(0.5);
+    this.add
+      .text(cx, cy, message, {
+        fontSize: "52px",
+        color: "#ffffff",
+        stroke: "#000000",
+        strokeThickness: 6,
+      })
+      .setOrigin(0.5);
 
-    this.add.text(cx, cy + 56, 'Press R to restart', {
-      fontSize: '22px', color: '#cccccc',
-      stroke: '#000000', strokeThickness: 4,
-    }).setOrigin(0.5);
+    this.add
+      .text(cx, cy + 56, "Press R to restart", {
+        fontSize: "22px",
+        color: "#cccccc",
+        stroke: "#000000",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5);
   }
 
   // Called by Bomb.explode() to remove the bomb from the map

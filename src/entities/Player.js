@@ -55,7 +55,7 @@ export default class Player {
     // bombRange is passed so Bomb doesn't need to reach back into the player
     const bomb = new Bomb(this.scene, this.col, this.row, this, this.bombRange);
     this.scene.bombs.set(key, bomb);
-    this.scene.sound.play('snd_place');
+    this.scene.sound.play('snd_place', { volume: 0.25 });
   }
 
   // Called by GameScene.onBombExploded() so the counter stays accurate.
