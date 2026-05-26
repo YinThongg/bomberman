@@ -2,32 +2,44 @@ import { TILE_SIZE, TILE, BOMB_FUSE_TIME, BOMB_SLIDE_SPEED } from '../config/con
 import type Player from './Player';
 import type GameScene from '../scenes/GameScene';
 
+export type BombType = 'normal' | 'pierce' | 'remote';
+
 export default class Bomb {
   scene: GameScene;
   col: number;
   row: number;
   owner: Player;
   range: number;
+  pierce: boolean;
+  remote: boolean;
+  cursed: boolean;
   sprite: Phaser.GameObjects.Image;
   pulseTween: Phaser.Tweens.Tween;
-  timer: Phaser.Time.TimerEvent;
+  timer: Phaser.Time.TimerEvent | null;
   sliding: boolean;
   slideDx: number;
   slideDy: number;
 
-  constructor(scene: GameScene, gridCol: number, gridRow: number, owner: Player, range = 1) {
+  constructor(scene: GameScene, gridCol: number, gridRow: number, owner: Player, range = 1, bombType: BombType = 'normal') {
     this.scene = scene;
     this.col = gridCol;
     this.row = gridRow;
     this.owner = owner;
     this.range = range;
+    this.pierce = bombType === 'pierce';
+    this.remote = bombType === 'remote';
+    this.cursed = owner.cursed;
     this.sliding = false;
     this.slideDx = 0;
     this.slideDy = 0;
 
     const x = gridCol * TILE_SIZE + TILE_SIZE / 2;
     const y = gridRow * TILE_SIZE + TILE_SIZE / 2;
-    const bombKey = owner === scene.player1 ? 'bomb_blue' : 'bomb_red';
+
+    let bombKey: string;
+    if (bombType === 'pierce') bombKey = 'bomb_pierce';
+    else if (bombType === 'remote') bombKey = 'bomb_remote';
+    else bombKey = owner === scene.player1 ? 'bomb_blue' : 'bomb_red';
 
     this.sprite = scene.add
       .image(x, y, bombKey)
@@ -37,12 +49,16 @@ export default class Bomb {
       targets: this.sprite,
       displayWidth: TILE_SIZE * 0.58,
       displayHeight: TILE_SIZE * 0.58,
-      duration: 350,
+      duration: this.remote ? 700 : 350,
       yoyo: true,
       repeat: -1,
     });
 
-    this.timer = scene.time.delayedCall(BOMB_FUSE_TIME, () => this.explode());
+    if (this.remote) {
+      this.timer = null;
+    } else {
+      this.timer = scene.time.delayedCall(BOMB_FUSE_TIME, () => this.explode());
+    }
   }
 
   kick(dx: number, dy: number) {
@@ -104,12 +120,12 @@ export default class Bomb {
   explode() {
     this.sliding = false;
     this.pulseTween.stop();
-    this.timer.remove(false);
+    if (this.timer) this.timer.remove(false);
 
     this.scene.onBombExploded(this);
     this.sprite.destroy();
 
-    const { tiles, revealed } = this.scene.getExplosionTiles(this.col, this.row, this.range);
+    const { tiles, revealed } = this.scene.getExplosionTiles(this.col, this.row, this.range, this.pierce);
 
     for (const { col, row } of tiles) {
       const chainBomb = this.scene.bombs.get(`${col},${row}`);
@@ -122,7 +138,7 @@ export default class Bomb {
       }
     }
 
-    this.scene.sound.play('snd_explode', { volume: 0.35 });
+    this.scene.sound.play('snd_explode', { volume: 0.15 });
 
     const imgs = tiles.map(({ col, row }) => {
       const x = col * TILE_SIZE + TILE_SIZE / 2;
@@ -130,7 +146,7 @@ export default class Bomb {
       return this.scene.add.image(x, y, 'explosion').setDisplaySize(TILE_SIZE, TILE_SIZE);
     });
 
-    this.scene.checkPlayerDeaths(tiles);
+    this.scene.checkPlayerDeaths(tiles, this.cursed);
 
     this.scene.time.delayedCall(300, () => {
       this.scene.tweens.add({

@@ -6,12 +6,20 @@ import {
   SPEED_BOOST_COOLDOWN,
   SPEED_UP_DURATION,
   RANGE_PER_PICKUP,
+  MAX_BOMB_RANGE,
+  PIERCE_BOMBS_PER_PICKUP,
+  REMOTE_BOMBS_PER_PICKUP,
+  SKULL_DURATION,
+  SKULL_SLOW_COOLDOWN,
   type PowerUpType,
 } from '../config/constants';
 import Bomb from './Bomb';
+import type { BombType } from './Bomb';
 import type GameScene from '../scenes/GameScene';
 
 const SPRITE_SIZE = TILE_SIZE * 0.82;
+
+type SkullEffect = 'slow' | 'reverse' | 'mini_range';
 
 export default class Player {
   scene: GameScene;
@@ -22,12 +30,20 @@ export default class Player {
   bombRange: number;
   alive: boolean;
   hasBombKick: boolean;
+  pierceBombs: number;
+  remoteBombs: number;
+  activeRemoteBombs: Bomb[];
   sprite: Phaser.GameObjects.Image;
 
   moveCooldown: number;
   lastMoveTime: number;
   hasSpeedUp: boolean;
+  cursed: boolean;
+  curseEffect: SkullEffect | null;
   private speedUpTimer: Phaser.Time.TimerEvent | null;
+  private curseTimer: Phaser.Time.TimerEvent | null;
+  private curseTween: Phaser.Tweens.Tween | null;
+  private savedRange: number;
 
   constructor(scene: GameScene, gridCol: number, gridRow: number, spriteKey: string, maxBombs = 1) {
     this.scene = scene;
@@ -38,11 +54,19 @@ export default class Player {
     this.bombRange = 1;
     this.alive = true;
     this.hasBombKick = false;
+    this.pierceBombs = 0;
+    this.remoteBombs = 0;
+    this.activeRemoteBombs = [];
 
     this.moveCooldown = BASE_MOVE_COOLDOWN;
     this.lastMoveTime = 0;
     this.hasSpeedUp = false;
+    this.cursed = false;
+    this.curseEffect = null;
     this.speedUpTimer = null;
+    this.curseTimer = null;
+    this.curseTween = null;
+    this.savedRange = 1;
 
     const { x, y } = this.toPixel();
     this.sprite = scene.add.image(x, y, spriteKey).setDisplaySize(SPRITE_SIZE, SPRITE_SIZE);
@@ -55,6 +79,7 @@ export default class Player {
       this.speedUpTimer.remove(false);
       this.speedUpTimer = null;
     }
+    this.removeCurse();
     this.scene.sound.play('snd_death');
   }
 
@@ -63,6 +88,11 @@ export default class Player {
   }
 
   tryMove(dx: number, dy: number) {
+    if (this.cursed && this.curseEffect === 'reverse') {
+      dx = -dx;
+      dy = -dy;
+    }
+
     const targetCol = this.col + dx;
     const targetRow = this.row + dy;
 
@@ -90,14 +120,50 @@ export default class Player {
   }
 
   placeBomb() {
+    this._placeBombInternal('normal');
+  }
+
+  placePierceBomb() {
+    if (this.pierceBombs <= 0) return;
+    if (this._placeBombInternal('pierce')) {
+      this.pierceBombs--;
+    }
+  }
+
+  placeOrDetonateRemoteBomb() {
+    if (this.activeRemoteBombs.length > 0) {
+      const toDetonate = [...this.activeRemoteBombs];
+      this.activeRemoteBombs = [];
+      for (const bomb of toDetonate) {
+        if (this.scene.bombs.has(`${bomb.col},${bomb.row}`)) {
+          bomb.explode();
+        }
+      }
+      return;
+    }
+
+    if (this.remoteBombs <= 0) return;
+    if (this._placeBombInternal('remote')) {
+      this.remoteBombs--;
+    }
+  }
+
+  private _placeBombInternal(bombType: BombType): boolean {
     const key = `${this.col},${this.row}`;
-    if (this.activeBombs >= this.maxBombs) return;
-    if (this.scene.bombs.has(key)) return;
+    if (this.activeBombs >= this.maxBombs) return false;
+    if (this.scene.bombs.has(key)) return false;
 
     this.activeBombs++;
-    const bomb = new Bomb(this.scene, this.col, this.row, this, this.bombRange);
+    const range = (this.cursed && this.curseEffect === 'mini_range') ? 1 : this.bombRange;
+    const bomb = new Bomb(this.scene, this.col, this.row, this, range, bombType);
     this.scene.bombs.set(key, bomb);
+
+    if (bombType === 'remote') {
+      this.activeRemoteBombs.push(bomb);
+    }
+
     this.scene.sound.play('snd_place', { volume: 0.25 });
+    return true;
   }
 
   onBombExploded() {
@@ -109,6 +175,10 @@ export default class Player {
     if (type === POWERUP.EXTRA_RANGE) this.bombRange += RANGE_PER_PICKUP;
     if (type === POWERUP.SPEED_UP) this.applySpeedUp();
     if (type === POWERUP.BOMB_KICK) this.hasBombKick = true;
+    if (type === POWERUP.FULL_FIRE) this.bombRange = MAX_BOMB_RANGE;
+    if (type === POWERUP.PIERCE_BOMB) this.pierceBombs += PIERCE_BOMBS_PER_PICKUP;
+    if (type === POWERUP.REMOTE_BOMB) this.remoteBombs += REMOTE_BOMBS_PER_PICKUP;
+    if (type === POWERUP.SKULL) this.applyCurse();
   }
 
   private applySpeedUp() {
@@ -124,6 +194,62 @@ export default class Player {
       this.moveCooldown = BASE_MOVE_COOLDOWN;
       this.speedUpTimer = null;
     });
+  }
+
+  applyCurseFromBomb() {
+    this.applyCurse();
+  }
+
+  private applyCurse() {
+    this.removeCurse();
+
+    const effects: SkullEffect[] = ['slow', 'reverse', 'mini_range'];
+    this.curseEffect = effects[Math.floor(Math.random() * effects.length)]!;
+    this.cursed = true;
+
+    if (this.curseEffect === 'slow') {
+      this.moveCooldown = SKULL_SLOW_COOLDOWN;
+    }
+    if (this.curseEffect === 'mini_range') {
+      this.savedRange = this.bombRange;
+    }
+
+    this.curseTween = this.scene.tweens.add({
+      targets: this.sprite,
+      alpha: 0.3,
+      duration: 200,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    this.curseTimer = this.scene.time.delayedCall(SKULL_DURATION, () => {
+      this.removeCurse();
+    });
+  }
+
+  private removeCurse() {
+    if (!this.cursed) return;
+
+    if (this.curseEffect === 'slow') {
+      this.moveCooldown = this.hasSpeedUp ? SPEED_BOOST_COOLDOWN : BASE_MOVE_COOLDOWN;
+    }
+    if (this.curseEffect === 'mini_range') {
+      this.bombRange = this.savedRange;
+    }
+
+    this.cursed = false;
+    this.curseEffect = null;
+
+    if (this.curseTween) {
+      this.curseTween.stop();
+      this.curseTween = null;
+    }
+    this.sprite.setAlpha(1);
+
+    if (this.curseTimer) {
+      this.curseTimer.remove(false);
+      this.curseTimer = null;
+    }
   }
 
   private updateVisualPosition() {

@@ -44,8 +44,8 @@ export default class GameScene extends Phaser.Scene {
     this.player1 = new Player(this, 1, 1, 'player_blue');
     this.player2 = new Player(this, GRID_COLS - 2, GRID_ROWS - 2, 'player_red');
 
-    this.keysP1 = this.input.keyboard!.addKeys('W,A,S,D,SHIFT') as Record<string, Phaser.Input.Keyboard.Key>;
-    this.keysP2 = this.input.keyboard!.addKeys('I,J,K,L,SPACE') as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keysP1 = this.input.keyboard!.addKeys('W,A,S,D,SHIFT,Q,E') as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keysP2 = this.input.keyboard!.addKeys('I,J,K,L,SPACE,O,U') as Record<string, Phaser.Input.Keyboard.Key>;
     this.keyRestart = this.input.keyboard!.addKey('R');
 
     this.gameOver = false;
@@ -65,6 +65,8 @@ export default class GameScene extends Phaser.Scene {
       else if (this.keysP1.W!.isDown) this.player1.tryMove(0, -1);
       else if (this.keysP1.S!.isDown) this.player1.tryMove(0, 1);
       if (Phaser.Input.Keyboard.JustDown(this.keysP1.SHIFT!)) this.player1.placeBomb();
+      if (Phaser.Input.Keyboard.JustDown(this.keysP1.Q!)) this.player1.placePierceBomb();
+      if (Phaser.Input.Keyboard.JustDown(this.keysP1.E!)) this.player1.placeOrDetonateRemoteBomb();
     }
 
     if (this.player2.alive) {
@@ -73,6 +75,8 @@ export default class GameScene extends Phaser.Scene {
       else if (this.keysP2.I!.isDown) this.player2.tryMove(0, -1);
       else if (this.keysP2.K!.isDown) this.player2.tryMove(0, 1);
       if (Phaser.Input.Keyboard.JustDown(this.keysP2.SPACE!)) this.player2.placeBomb();
+      if (Phaser.Input.Keyboard.JustDown(this.keysP2.O!)) this.player2.placePierceBomb();
+      if (Phaser.Input.Keyboard.JustDown(this.keysP2.U!)) this.player2.placeOrDetonateRemoteBomb();
     }
 
     for (const bomb of this.bombs.values()) {
@@ -171,7 +175,7 @@ export default class GameScene extends Phaser.Scene {
 
   // ── Explosion ────────────────────────────────────────────────────────────
 
-  getExplosionTiles(col: number, row: number, range: number) {
+  getExplosionTiles(col: number, row: number, range: number, pierce = false) {
     const tiles: { col: number; row: number }[] = [{ col, row }];
     const revealed = new Set<string>();
     const directions = [
@@ -182,20 +186,31 @@ export default class GameScene extends Phaser.Scene {
     ];
 
     for (const [dc, dr] of directions) {
-      for (let i = 1; i <= range; i++) {
+      let reach = 0;
+      for (let i = 1; ; i++) {
         const nc = col + dc! * i;
         const nr = row + dr! * i;
-        const tile = this.grid[nr]![nc]!;
+        const tile = this.grid[nr]?.[nc];
 
-        if (tile === TILE.WALL) break;
+        if (tile === undefined || tile === TILE.WALL) break;
 
         if (tile === TILE.SOFT_WALL) {
           tiles.push({ col: nc, row: nr });
           this.destroySoftWall(nc, nr);
           revealed.add(`${nc},${nr}`);
+          if (!pierce) break;
+          continue;
+        }
+
+        // Cursed bombs block incoming explosion rays
+        const bombAtTile = this.bombs.get(`${nc},${nr}`);
+        if (bombAtTile?.cursed) {
+          tiles.push({ col: nc, row: nr });
           break;
         }
 
+        reach++;
+        if (reach > range) break;
         tiles.push({ col: nc, row: nr });
       }
     }
@@ -239,13 +254,21 @@ export default class GameScene extends Phaser.Scene {
 
   // ── Death / game-over ────────────────────────────────────────────────────
 
-  checkPlayerDeaths(tiles: { col: number; row: number }[]) {
+  checkPlayerDeaths(tiles: { col: number; row: number }[], fromCursedBomb: boolean) {
     for (const { col, row } of tiles) {
       if (this.player1.alive && this.player1.col === col && this.player1.row === row) {
-        this.player1.die();
+        if (fromCursedBomb) {
+          this.player1.applyCurseFromBomb();
+        } else {
+          this.player1.die();
+        }
       }
       if (this.player2.alive && this.player2.col === col && this.player2.row === row) {
-        this.player2.die();
+        if (fromCursedBomb) {
+          this.player2.applyCurseFromBomb();
+        } else {
+          this.player2.die();
+        }
       }
     }
     this.checkGameOver();

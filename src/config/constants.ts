@@ -15,6 +15,10 @@ export const POWERUP = {
   EXTRA_RANGE: 'extra_range',
   SPEED_UP: 'speed_up',
   BOMB_KICK: 'bomb_kick',
+  FULL_FIRE: 'full_fire',
+  PIERCE_BOMB: 'pierce_bomb',
+  REMOTE_BOMB: 'remote_bomb',
+  SKULL: 'skull',
 } as const;
 
 export type PowerUpType = (typeof POWERUP)[keyof typeof POWERUP];
@@ -36,6 +40,10 @@ export const POWERUP_WEIGHTS: Record<PowerUpType, number> = {
   [POWERUP.EXTRA_RANGE]: 0.6,
   [POWERUP.SPEED_UP]: 0.6,
   [POWERUP.BOMB_KICK]: 0.4,
+  [POWERUP.FULL_FIRE]: 1.0,
+  [POWERUP.PIERCE_BOMB]: 1.0,
+  [POWERUP.REMOTE_BOMB]: 1.0,
+  [POWERUP.SKULL]: 1.0,
 };
 
 export const BASE_MOVE_COOLDOWN = 180;
@@ -44,3 +52,8 @@ export const SPEED_UP_DURATION = 180_000;
 export const BOMB_FUSE_TIME = 2500;
 export const RANGE_PER_PICKUP = 0.5;
 export const BOMB_SLIDE_SPEED = 6;
+export const MAX_BOMB_RANGE = Math.max(GRID_COLS, GRID_ROWS);
+export const PIERCE_BOMBS_PER_PICKUP = 3;
+export const REMOTE_BOMBS_PER_PICKUP = 3;
+export const SKULL_DURATION = 30_000;
+export const SKULL_SLOW_COOLDOWN = 320;

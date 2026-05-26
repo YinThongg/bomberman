@@ -5,6 +5,10 @@ const SPRITE_KEYS: Record<PowerUpType, string> = {
   [POWERUP.EXTRA_RANGE]: 'powerup_range',
   [POWERUP.SPEED_UP]: 'powerup_speed',
   [POWERUP.BOMB_KICK]: 'powerup_kick',
+  [POWERUP.FULL_FIRE]: 'powerup_fullfire',
+  [POWERUP.PIERCE_BOMB]: 'powerup_pierce',
+  [POWERUP.REMOTE_BOMB]: 'powerup_remote',
+  [POWERUP.SKULL]: 'powerup_skull',
 };
 
 export default class PowerUp {

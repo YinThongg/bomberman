@@ -155,6 +155,56 @@ def make_powerup_kick(path):
     d.rectangle([(6, 10), (13, 12)], fill=(255, 255, 255, 230))
     save(img, path)
 
+def make_powerup_fullfire(path):
+    """Red circle with a flame — means max blast range."""
+    img = blank()
+    d = ImageDraw.Draw(img)
+    d.ellipse([(1, 1), (S-2, S-2)], fill=(244, 67, 54, 255), outline=(180, 30, 30, 255))
+    # Flame shape
+    d.polygon([(8, 2), (5, 8), (7, 7), (4, 13), (8, 9), (10, 10), (12, 13), (9, 7), (11, 8)],
+              fill=(255, 235, 59, 240))
+    save(img, path)
+
+def make_powerup_pierce(path):
+    """Cyan circle with an arrow piercing through — means pierce bomb."""
+    img = blank()
+    d = ImageDraw.Draw(img)
+    d.ellipse([(1, 1), (S-2, S-2)], fill=(0, 188, 212, 255), outline=(0, 130, 150, 255))
+    # Arrow going through
+    d.line([(3, 8), (13, 8)], fill=(255, 255, 255, 230), width=2)
+    d.polygon([(11, 5), (14, 8), (11, 11)], fill=(255, 255, 255, 230))
+    # Break marks to show piercing
+    d.rectangle([(6, 5), (7, 11)], fill=(0, 150, 170, 200))
+    save(img, path)
+
+def make_powerup_remote(path):
+    """Dark purple circle with a signal icon — means remote bomb."""
+    img = blank()
+    d = ImageDraw.Draw(img)
+    d.ellipse([(1, 1), (S-2, S-2)], fill=(103, 58, 183, 255), outline=(60, 30, 130, 255))
+    # Signal waves
+    d.arc([(5, 4), (11, 10)], start=220, end=320, fill=(255, 255, 255, 200), width=1)
+    d.arc([(3, 2), (13, 12)], start=220, end=320, fill=(255, 255, 255, 150), width=1)
+    # Dot at center
+    d.ellipse([(7, 8), (9, 10)], fill=(255, 255, 255, 230))
+    save(img, path)
+
+def make_powerup_skull(path):
+    """Dark gray circle with a skull — means curse/debuff."""
+    img = blank()
+    d = ImageDraw.Draw(img)
+    d.ellipse([(1, 1), (S-2, S-2)], fill=(66, 66, 66, 255), outline=(30, 30, 30, 255))
+    # Skull shape
+    d.ellipse([(4, 3), (12, 10)], fill=(220, 220, 220, 255))
+    # Eyes
+    d.ellipse([(5, 5), (7, 7)], fill=(30, 30, 30, 255))
+    d.ellipse([(9, 5), (11, 7)], fill=(30, 30, 30, 255))
+    # Teeth
+    d.rectangle([(5, 10), (11, 12)], fill=(220, 220, 220, 255))
+    d.line([(7, 10), (7, 12)], fill=(30, 30, 30, 255), width=1)
+    d.line([(9, 10), (9, 12)], fill=(30, 30, 30, 255), width=1)
+    save(img, path)
+
 def make_powerup_range(path):
     """Purple circle with an arrow — means +1 blast range."""
     img = blank()
@@ -179,11 +229,17 @@ make_player('#e53935', 'assets/sprites/player_red.png')
 make_bomb('assets/sprites/bomb.png')
 make_bomb('assets/sprites/bomb_blue.png', '#1a3a8a', '#4488cc')
 make_bomb('assets/sprites/bomb_red.png', '#8a1a1a', '#cc4444')
+make_bomb('assets/sprites/bomb_pierce.png', '#007a8a', '#00bcd4')
 make_explosion('assets/sprites/explosion.png')
 make_powerup_bomb('assets/sprites/powerup_bomb.png')
 make_powerup_range('assets/sprites/powerup_range.png')
 make_powerup_speed('assets/sprites/powerup_speed.png')
 make_powerup_kick('assets/sprites/powerup_kick.png')
+make_powerup_fullfire('assets/sprites/powerup_fullfire.png')
+make_powerup_pierce('assets/sprites/powerup_pierce.png')
+make_powerup_remote('assets/sprites/powerup_remote.png')
+make_powerup_skull('assets/sprites/powerup_skull.png')
+make_bomb('assets/sprites/bomb_remote.png', '#3a1a6a', '#7744aa')
 
 # ── Audio ─────────────────────────────────────────────────────────────────────
 # Generates real WAV files using sine waves and noise.
