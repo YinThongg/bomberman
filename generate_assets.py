@@ -95,17 +95,13 @@ def make_player(color_hex, path):
 
 # ── Bomb ─────────────────────────────────────────────────────────────────────
 
-def make_bomb(path):
+def make_bomb(path, color_hex='#191919', highlight_hex='#505050'):
     img = blank()
     d = ImageDraw.Draw(img)
-    # Main sphere
-    d.ellipse([(2, 4), (S-2, S-2)], fill=(25, 25, 25, 255), outline=(0, 0, 0, 255))
-    # Shine highlight
-    d.ellipse([(3, 5), (6, 8)], fill=(80, 80, 80, 180))
-    # Fuse (curved line in two segments)
+    d.ellipse([(2, 4), (S-2, S-2)], fill=rgba(color_hex), outline=darken(color_hex, 30))
+    d.ellipse([(3, 5), (6, 8)], fill=(*rgb(highlight_hex), 180))
     d.line([(10, 4), (12, 2)], fill=(180, 120, 30, 255), width=1)
     d.line([(12, 2), (13, 1)], fill=(230, 180, 50, 255), width=1)
-    # Fuse spark
     d.ellipse([(12, 0), (14, 2)], fill=(255, 220, 0, 255))
     save(img, path)
 
@@ -140,6 +136,25 @@ def make_powerup_bomb(path):
     d.rectangle([(4, 7),  (12, 9)], fill=(100, 75, 0, 255))
     save(img, path)
 
+def make_powerup_speed(path):
+    """Green circle with a lightning bolt — means speed up."""
+    img = blank()
+    d = ImageDraw.Draw(img)
+    d.ellipse([(1, 1), (S-2, S-2)], fill=(76, 175, 80, 255), outline=(30, 120, 40, 255))
+    d.polygon([(9, 2), (5, 8), (8, 8), (6, 14), (11, 7), (8, 7)],
+              fill=(255, 255, 255, 230))
+    save(img, path)
+
+def make_powerup_kick(path):
+    """Orange circle with a boot/shoe — means bomb kick."""
+    img = blank()
+    d = ImageDraw.Draw(img)
+    d.ellipse([(1, 1), (S-2, S-2)], fill=(255, 152, 0, 255), outline=(200, 100, 0, 255))
+    # Boot shape
+    d.rectangle([(4, 5), (8, 12)], fill=(255, 255, 255, 230))
+    d.rectangle([(6, 10), (13, 12)], fill=(255, 255, 255, 230))
+    save(img, path)
+
 def make_powerup_range(path):
     """Purple circle with an arrow — means +1 blast range."""
     img = blank()
@@ -162,9 +177,13 @@ print('\n── Sprites ──')
 make_player('#2196f3', 'assets/sprites/player_blue.png')
 make_player('#e53935', 'assets/sprites/player_red.png')
 make_bomb('assets/sprites/bomb.png')
+make_bomb('assets/sprites/bomb_blue.png', '#1a3a8a', '#4488cc')
+make_bomb('assets/sprites/bomb_red.png', '#8a1a1a', '#cc4444')
 make_explosion('assets/sprites/explosion.png')
 make_powerup_bomb('assets/sprites/powerup_bomb.png')
 make_powerup_range('assets/sprites/powerup_range.png')
+make_powerup_speed('assets/sprites/powerup_speed.png')
+make_powerup_kick('assets/sprites/powerup_kick.png')
 
 # ── Audio ─────────────────────────────────────────────────────────────────────
 # Generates real WAV files using sine waves and noise.

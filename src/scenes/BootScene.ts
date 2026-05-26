@@ -26,9 +26,13 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('player_blue', 'assets/sprites/player_blue.png');
     this.load.image('player_red', 'assets/sprites/player_red.png');
     this.load.image('bomb', 'assets/sprites/bomb.png');
+    this.load.image('bomb_blue', 'assets/sprites/bomb_blue.png');
+    this.load.image('bomb_red', 'assets/sprites/bomb_red.png');
     this.load.image('explosion', 'assets/sprites/explosion.png');
     this.load.image('powerup_bomb', 'assets/sprites/powerup_bomb.png');
     this.load.image('powerup_range', 'assets/sprites/powerup_range.png');
+    this.load.image('powerup_speed', 'assets/sprites/powerup_speed.png');
+    this.load.image('powerup_kick', 'assets/sprites/powerup_kick.png');
 
     this.load.audio('snd_place', 'assets/audio/bomb_place.wav');
     this.load.audio('snd_explode', 'assets/audio/explosion.wav');

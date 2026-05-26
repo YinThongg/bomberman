@@ -1,5 +1,11 @@
-import Phaser from 'phaser';
 import { TILE_SIZE, POWERUP, type PowerUpType } from '../config/constants';
+
+const SPRITE_KEYS: Record<PowerUpType, string> = {
+  [POWERUP.EXTRA_BOMB]: 'powerup_bomb',
+  [POWERUP.EXTRA_RANGE]: 'powerup_range',
+  [POWERUP.SPEED_UP]: 'powerup_speed',
+  [POWERUP.BOMB_KICK]: 'powerup_kick',
+};
 
 export default class PowerUp {
   scene: Phaser.Scene;
@@ -16,8 +22,7 @@ export default class PowerUp {
 
     const x = col * TILE_SIZE + TILE_SIZE / 2;
     const y = row * TILE_SIZE + TILE_SIZE / 2;
-    const key = type === POWERUP.EXTRA_BOMB ? 'powerup_bomb' : 'powerup_range';
-    this.sprite = scene.add.image(x, y, key).setDisplaySize(TILE_SIZE * 0.65, TILE_SIZE * 0.65);
+    this.sprite = scene.add.image(x, y, SPRITE_KEYS[type]).setDisplaySize(TILE_SIZE * 0.65, TILE_SIZE * 0.65);
   }
 
   collect() {

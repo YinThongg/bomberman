@@ -6,7 +6,10 @@ import {
   TILE_SIZE,
   TILE,
   POWERUP,
+  POWERUP_SPAWN_CHANCE,
+  POWERUP_WEIGHTS,
   type TileType,
+  type PowerUpType,
 } from '../config/constants';
 import Player from '../entities/Player';
 import PowerUp from '../entities/PowerUp';
@@ -41,7 +44,6 @@ export default class GameScene extends Phaser.Scene {
     this.player1 = new Player(this, 1, 1, 'player_blue');
     this.player2 = new Player(this, GRID_COLS - 2, GRID_ROWS - 2, 'player_red');
 
-    // P1: WASD + Shift  |  P2: IJKL + Space
     this.keysP1 = this.input.keyboard!.addKeys('W,A,S,D,SHIFT') as Record<string, Phaser.Input.Keyboard.Key>;
     this.keysP2 = this.input.keyboard!.addKeys('I,J,K,L,SPACE') as Record<string, Phaser.Input.Keyboard.Key>;
     this.keyRestart = this.input.keyboard!.addKey('R');
@@ -52,29 +54,29 @@ export default class GameScene extends Phaser.Scene {
   }
 
   update() {
-    const JD = Phaser.Input.Keyboard.JustDown;
-
     if (this.gameOver) {
-      if (JD(this.keyRestart)) this.scene.restart();
+      if (Phaser.Input.Keyboard.JustDown(this.keyRestart)) this.scene.restart();
       return;
     }
 
-    // Player 1 — WASD + Shift
     if (this.player1.alive) {
-      if (JD(this.keysP1.A!)) this.player1.tryMove(-1, 0);
-      if (JD(this.keysP1.D!)) this.player1.tryMove(1, 0);
-      if (JD(this.keysP1.W!)) this.player1.tryMove(0, -1);
-      if (JD(this.keysP1.S!)) this.player1.tryMove(0, 1);
-      if (JD(this.keysP1.SHIFT!)) this.player1.placeBomb();
+      if (this.keysP1.A!.isDown) this.player1.tryMove(-1, 0);
+      else if (this.keysP1.D!.isDown) this.player1.tryMove(1, 0);
+      else if (this.keysP1.W!.isDown) this.player1.tryMove(0, -1);
+      else if (this.keysP1.S!.isDown) this.player1.tryMove(0, 1);
+      if (Phaser.Input.Keyboard.JustDown(this.keysP1.SHIFT!)) this.player1.placeBomb();
     }
 
-    // Player 2 — IJKL + Space
     if (this.player2.alive) {
-      if (JD(this.keysP2.J!)) this.player2.tryMove(-1, 0);
-      if (JD(this.keysP2.L!)) this.player2.tryMove(1, 0);
-      if (JD(this.keysP2.I!)) this.player2.tryMove(0, -1);
-      if (JD(this.keysP2.K!)) this.player2.tryMove(0, 1);
-      if (JD(this.keysP2.SPACE!)) this.player2.placeBomb();
+      if (this.keysP2.J!.isDown) this.player2.tryMove(-1, 0);
+      else if (this.keysP2.L!.isDown) this.player2.tryMove(1, 0);
+      else if (this.keysP2.I!.isDown) this.player2.tryMove(0, -1);
+      else if (this.keysP2.K!.isDown) this.player2.tryMove(0, 1);
+      if (Phaser.Input.Keyboard.JustDown(this.keysP2.SPACE!)) this.player2.placeBomb();
+    }
+
+    for (const bomb of this.bombs.values()) {
+      bomb.updateSlide();
     }
   }
 
@@ -210,10 +212,21 @@ export default class GameScene extends Phaser.Scene {
       this.softWallSprites.delete(`${col},${row}`);
     }
 
-    if (Math.random() < 0.3) {
-      const type = Math.random() < 0.5 ? POWERUP.EXTRA_BOMB : POWERUP.EXTRA_RANGE;
+    if (Math.random() < POWERUP_SPAWN_CHANCE) {
+      const type = this.rollPowerUpType();
       this.powerUps.set(`${col},${row}`, new PowerUp(this, col, row, type));
     }
+  }
+
+  private rollPowerUpType(): PowerUpType {
+    const entries = Object.entries(POWERUP_WEIGHTS) as [PowerUpType, number][];
+    const totalWeight = entries.reduce((sum, [, w]) => sum + w, 0);
+    let roll = Math.random() * totalWeight;
+    for (const [type, weight] of entries) {
+      roll -= weight;
+      if (roll <= 0) return type;
+    }
+    return entries[0]![0];
   }
 
   destroyPowerUpAt(col: number, row: number) {

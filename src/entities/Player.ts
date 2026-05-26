@@ -1,5 +1,13 @@
-import Phaser from 'phaser';
-import { TILE_SIZE, TILE, POWERUP, type PowerUpType } from '../config/constants';
+import {
+  TILE_SIZE,
+  TILE,
+  POWERUP,
+  BASE_MOVE_COOLDOWN,
+  SPEED_BOOST_COOLDOWN,
+  SPEED_UP_DURATION,
+  RANGE_PER_PICKUP,
+  type PowerUpType,
+} from '../config/constants';
 import Bomb from './Bomb';
 import type GameScene from '../scenes/GameScene';
 
@@ -13,7 +21,13 @@ export default class Player {
   activeBombs: number;
   bombRange: number;
   alive: boolean;
+  hasBombKick: boolean;
   sprite: Phaser.GameObjects.Image;
+
+  moveCooldown: number;
+  lastMoveTime: number;
+  hasSpeedUp: boolean;
+  private speedUpTimer: Phaser.Time.TimerEvent | null;
 
   constructor(scene: GameScene, gridCol: number, gridRow: number, spriteKey: string, maxBombs = 1) {
     this.scene = scene;
@@ -23,6 +37,12 @@ export default class Player {
     this.activeBombs = 0;
     this.bombRange = 1;
     this.alive = true;
+    this.hasBombKick = false;
+
+    this.moveCooldown = BASE_MOVE_COOLDOWN;
+    this.lastMoveTime = 0;
+    this.hasSpeedUp = false;
+    this.speedUpTimer = null;
 
     const { x, y } = this.toPixel();
     this.sprite = scene.add.image(x, y, spriteKey).setDisplaySize(SPRITE_SIZE, SPRITE_SIZE);
@@ -31,12 +51,15 @@ export default class Player {
   die() {
     this.alive = false;
     this.sprite.setVisible(false);
+    if (this.speedUpTimer) {
+      this.speedUpTimer.remove(false);
+      this.speedUpTimer = null;
+    }
     this.scene.sound.play('snd_death');
   }
 
-  updateVisualPosition() {
-    const { x, y } = this.toPixel();
-    this.sprite.setPosition(x, y);
+  canMove(): boolean {
+    return this.scene.time.now - this.lastMoveTime >= this.moveCooldown;
   }
 
   tryMove(dx: number, dy: number) {
@@ -44,14 +67,26 @@ export default class Player {
     const targetRow = this.row + dy;
 
     const gridBlocked = this.scene.grid[targetRow]![targetCol] !== TILE.FLOOR;
-    const bombBlocked = this.scene.bombs.has(`${targetCol},${targetRow}`);
 
-    if (!gridBlocked && !bombBlocked) {
-      this.col = targetCol;
-      this.row = targetRow;
-      this.updateVisualPosition();
-      this._checkPowerUp();
+    if (gridBlocked) return;
+
+    const bombKey = `${targetCol},${targetRow}`;
+    const bomb = this.scene.bombs.get(bombKey);
+
+    if (bomb) {
+      if (this.hasBombKick && !bomb.sliding) {
+        bomb.kick(dx, dy);
+      }
+      return;
     }
+
+    if (!this.canMove()) return;
+
+    this.col = targetCol;
+    this.row = targetRow;
+    this.lastMoveTime = this.scene.time.now;
+    this.updateVisualPosition();
+    this._checkPowerUp();
   }
 
   placeBomb() {
@@ -71,7 +106,29 @@ export default class Player {
 
   collectPowerUp(type: PowerUpType) {
     if (type === POWERUP.EXTRA_BOMB) this.maxBombs++;
-    if (type === POWERUP.EXTRA_RANGE) this.bombRange++;
+    if (type === POWERUP.EXTRA_RANGE) this.bombRange += RANGE_PER_PICKUP;
+    if (type === POWERUP.SPEED_UP) this.applySpeedUp();
+    if (type === POWERUP.BOMB_KICK) this.hasBombKick = true;
+  }
+
+  private applySpeedUp() {
+    if (this.speedUpTimer) {
+      this.speedUpTimer.remove(false);
+    }
+
+    this.hasSpeedUp = true;
+    this.moveCooldown = SPEED_BOOST_COOLDOWN;
+
+    this.speedUpTimer = this.scene.time.delayedCall(SPEED_UP_DURATION, () => {
+      this.hasSpeedUp = false;
+      this.moveCooldown = BASE_MOVE_COOLDOWN;
+      this.speedUpTimer = null;
+    });
+  }
+
+  private updateVisualPosition() {
+    const { x, y } = this.toPixel();
+    this.sprite.setPosition(x, y);
   }
 
   toPixel() {
