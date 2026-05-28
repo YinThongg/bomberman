@@ -47,8 +47,8 @@ export const POWERUP_WEIGHTS: Record<PowerUpType, number> = {
 };
 
 export const BASE_MOVE_COOLDOWN = 180;
-export const SPEED_BOOST_COOLDOWN = 105;
-export const SPEED_UP_DURATION = 180_000;
+export const SPEED_PER_PICKUP = 20;
+export const MIN_MOVE_COOLDOWN = 70;
 export const BOMB_FUSE_TIME = 2500;
 export const RANGE_PER_PICKUP = 0.5;
 export const BOMB_SLIDE_SPEED = 6;
@@ -57,3 +57,4 @@ export const PIERCE_BOMBS_PER_PICKUP = 3;
 export const REMOTE_BOMBS_PER_PICKUP = 3;
 export const SKULL_DURATION = 30_000;
 export const SKULL_SLOW_COOLDOWN = 320;
+export const HUD_HEIGHT = 36;

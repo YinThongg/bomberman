@@ -3,8 +3,8 @@ import {
   TILE,
   POWERUP,
   BASE_MOVE_COOLDOWN,
-  SPEED_BOOST_COOLDOWN,
-  SPEED_UP_DURATION,
+  SPEED_PER_PICKUP,
+  MIN_MOVE_COOLDOWN,
   RANGE_PER_PICKUP,
   MAX_BOMB_RANGE,
   PIERCE_BOMBS_PER_PICKUP,
@@ -37,10 +37,9 @@ export default class Player {
 
   moveCooldown: number;
   lastMoveTime: number;
-  hasSpeedUp: boolean;
+  speedPickups: number;
   cursed: boolean;
   curseEffect: SkullEffect | null;
-  private speedUpTimer: Phaser.Time.TimerEvent | null;
   private curseTimer: Phaser.Time.TimerEvent | null;
   private curseTween: Phaser.Tweens.Tween | null;
   private savedRange: number;
@@ -60,10 +59,9 @@ export default class Player {
 
     this.moveCooldown = BASE_MOVE_COOLDOWN;
     this.lastMoveTime = 0;
-    this.hasSpeedUp = false;
+    this.speedPickups = 0;
     this.cursed = false;
     this.curseEffect = null;
-    this.speedUpTimer = null;
     this.curseTimer = null;
     this.curseTween = null;
     this.savedRange = 1;
@@ -75,10 +73,6 @@ export default class Player {
   die() {
     this.alive = false;
     this.sprite.setVisible(false);
-    if (this.speedUpTimer) {
-      this.speedUpTimer.remove(false);
-      this.speedUpTimer = null;
-    }
     this.removeCurse();
     this.scene.sound.play('snd_death');
   }
@@ -182,18 +176,13 @@ export default class Player {
   }
 
   private applySpeedUp() {
-    if (this.speedUpTimer) {
-      this.speedUpTimer.remove(false);
+    this.speedPickups++;
+    if (!(this.cursed && this.curseEffect === 'slow')) {
+      this.moveCooldown = Math.max(
+        MIN_MOVE_COOLDOWN,
+        BASE_MOVE_COOLDOWN - this.speedPickups * SPEED_PER_PICKUP,
+      );
     }
-
-    this.hasSpeedUp = true;
-    this.moveCooldown = SPEED_BOOST_COOLDOWN;
-
-    this.speedUpTimer = this.scene.time.delayedCall(SPEED_UP_DURATION, () => {
-      this.hasSpeedUp = false;
-      this.moveCooldown = BASE_MOVE_COOLDOWN;
-      this.speedUpTimer = null;
-    });
   }
 
   applyCurseFromBomb() {
@@ -231,7 +220,10 @@ export default class Player {
     if (!this.cursed) return;
 
     if (this.curseEffect === 'slow') {
-      this.moveCooldown = this.hasSpeedUp ? SPEED_BOOST_COOLDOWN : BASE_MOVE_COOLDOWN;
+      this.moveCooldown = Math.max(
+        MIN_MOVE_COOLDOWN,
+        BASE_MOVE_COOLDOWN - this.speedPickups * SPEED_PER_PICKUP,
+      );
     }
     if (this.curseEffect === 'mini_range') {
       this.bombRange = this.savedRange;

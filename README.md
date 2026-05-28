@@ -43,7 +43,7 @@ Then open [http://localhost:5173](http://localhost:5173).
 |------|-------|--------|
 | +1 Bomb | Yellow | +1 max bomb capacity (permanent) |
 | +1 Range | Purple | +0.5 explosion range per pickup (permanent) |
-| Speed Up | Green | Faster movement for 3 minutes |
+| Speed Up | Green | Permanent speed boost (stacks with each pickup) |
 | Bomb Kick | Orange | Walk into bombs to kick them sliding (permanent) |
 | Full Fire | Red | Max explosion range instantly (permanent, very rare) |
 | Pierce Bomb | Cyan | Gives 3 pierce bombs — blast goes through soft walls |

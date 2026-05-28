@@ -5,6 +5,7 @@ import {
   GRID_ROWS,
   TILE_SIZE,
   TILE,
+  HUD_HEIGHT,
   POWERUP,
   POWERUP_SPAWN_CHANCE,
   POWERUP_WEIGHTS,
@@ -26,6 +27,8 @@ export default class GameScene extends Phaser.Scene {
   keysP2!: Record<string, Phaser.Input.Keyboard.Key>;
   keyRestart!: Phaser.Input.Keyboard.Key;
   gameOver!: boolean;
+  private hudP1!: Phaser.GameObjects.Text;
+  private hudP2!: Phaser.GameObjects.Text;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -50,6 +53,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.gameOver = false;
 
+    this.createHud();
     this.createHomeButton();
   }
 
@@ -82,6 +86,37 @@ export default class GameScene extends Phaser.Scene {
     for (const bomb of this.bombs.values()) {
       bomb.updateSlide();
     }
+
+    this.updateHud();
+  }
+
+  // ── HUD ──────────────────────────────────────────────────────────────────
+
+  private createHud() {
+    const hudY = GRID_ROWS * TILE_SIZE + HUD_HEIGHT / 2;
+    const style: Phaser.Types.GameObjects.Text.TextStyle = {
+      fontSize: '13px',
+      color: '#aaaaaa',
+      fontFamily: 'monospace',
+    };
+
+    this.hudP1 = this.add.text(8, hudY, '', style).setOrigin(0, 0.5).setDepth(100);
+    this.hudP2 = this.add.text(GRID_COLS * TILE_SIZE - 8, hudY, '', style)
+      .setOrigin(1, 0.5).setDepth(100);
+  }
+
+  private buildHudString(player: Player): string {
+    const parts: string[] = [];
+    parts.push(`Bombs: ${player.maxBombs}`);
+    if (player.pierceBombs > 0) parts.push(`Pierce: ${player.pierceBombs}`);
+    if (player.remoteBombs > 0) parts.push(`Remote: ${player.remoteBombs}`);
+    if (player.cursed) parts.push('CURSED');
+    return parts.join('  ');
+  }
+
+  private updateHud() {
+    this.hudP1.setText(this.buildHudString(this.player1));
+    this.hudP2.setText(this.buildHudString(this.player2));
   }
 
   // ── Home button ──────────────────────────────────────────────────────────
