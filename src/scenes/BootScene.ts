@@ -25,9 +25,13 @@ export default class BootScene extends Phaser.Scene {
 
     this.load.image('player_blue', 'assets/sprites/player_blue.png');
     this.load.image('player_red', 'assets/sprites/player_red.png');
+    this.load.image('player_white', 'assets/sprites/player_white.png');
+    this.load.image('player_yellow', 'assets/sprites/player_yellow.png');
     this.load.image('bomb', 'assets/sprites/bomb.png');
     this.load.image('bomb_blue', 'assets/sprites/bomb_blue.png');
     this.load.image('bomb_red', 'assets/sprites/bomb_red.png');
+    this.load.image('bomb_white', 'assets/sprites/bomb_white.png');
+    this.load.image('bomb_yellow', 'assets/sprites/bomb_yellow.png');
     this.load.image('bomb_pierce', 'assets/sprites/bomb_pierce.png');
     this.load.image('explosion', 'assets/sprites/explosion.png');
     this.load.image('powerup_bomb', 'assets/sprites/powerup_bomb.png');

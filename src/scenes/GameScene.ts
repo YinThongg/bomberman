@@ -15,20 +15,21 @@ import {
 import Player from '../entities/Player';
 import PowerUp from '../entities/PowerUp';
 import type Bomb from '../entities/Bomb';
+import KeyboardInput, { P1_KEYS, P2_KEYS } from '../input/KeyboardInput';
+import NullInput from '../input/NullInput';
+
+const PLAYER_NAMES = ['P1', 'P2', 'P3', 'P4'];
+const PLAYER_COLORS = ['#4488ff', '#ff4444', '#dddddd', '#ffaa00'];
 
 export default class GameScene extends Phaser.Scene {
   grid!: TileType[][];
   softWallSprites!: Map<string, Phaser.GameObjects.Image>;
   powerUps!: Map<string, PowerUp>;
   bombs!: Map<string, Bomb>;
-  player1!: Player;
-  player2!: Player;
-  keysP1!: Record<string, Phaser.Input.Keyboard.Key>;
-  keysP2!: Record<string, Phaser.Input.Keyboard.Key>;
+  players!: Player[];
   keyRestart!: Phaser.Input.Keyboard.Key;
   gameOver!: boolean;
-  private hudP1!: Phaser.GameObjects.Text;
-  private hudP2!: Phaser.GameObjects.Text;
+  private hudTexts!: Phaser.GameObjects.Text[];
 
   constructor() {
     super({ key: 'GameScene' });
@@ -44,11 +45,18 @@ export default class GameScene extends Phaser.Scene {
 
     this.bombs = new Map();
 
-    this.player1 = new Player(this, 1, 1, 'player_blue');
-    this.player2 = new Player(this, GRID_COLS - 2, GRID_ROWS - 2, 'player_red');
+    const kb1 = new KeyboardInput(this, P1_KEYS);
+    const kb2 = new KeyboardInput(this, P2_KEYS);
+    const ai3 = new NullInput();  // placeholder — will become AIInput
+    const ai4 = new NullInput();  // placeholder — will become AIInput
 
-    this.keysP1 = this.input.keyboard!.addKeys('W,A,S,D,SHIFT,Q,E') as Record<string, Phaser.Input.Keyboard.Key>;
-    this.keysP2 = this.input.keyboard!.addKeys('I,J,K,L,SPACE,O,U') as Record<string, Phaser.Input.Keyboard.Key>;
+    this.players = [
+      new Player(this, 1, 1, 'player_blue', 'bomb_blue', kb1, 0),                              // top-left
+      new Player(this, GRID_COLS - 2, GRID_ROWS - 2, 'player_red', 'bomb_red', kb2, 1),         // bottom-right
+      new Player(this, GRID_COLS - 2, 1, 'player_white', 'bomb_white', ai3, 2),                  // top-right
+      new Player(this, 1, GRID_ROWS - 2, 'player_yellow', 'bomb_yellow', ai4, 3),                // bottom-left
+    ];
+
     this.keyRestart = this.input.keyboard!.addKey('R');
 
     this.gameOver = false;
@@ -63,24 +71,10 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
 
-    if (this.player1.alive) {
-      if (this.keysP1.A!.isDown) this.player1.tryMove(-1, 0);
-      else if (this.keysP1.D!.isDown) this.player1.tryMove(1, 0);
-      else if (this.keysP1.W!.isDown) this.player1.tryMove(0, -1);
-      else if (this.keysP1.S!.isDown) this.player1.tryMove(0, 1);
-      if (Phaser.Input.Keyboard.JustDown(this.keysP1.SHIFT!)) this.player1.placeBomb();
-      if (Phaser.Input.Keyboard.JustDown(this.keysP1.Q!)) this.player1.placePierceBomb();
-      if (Phaser.Input.Keyboard.JustDown(this.keysP1.E!)) this.player1.placeOrDetonateRemoteBomb();
-    }
-
-    if (this.player2.alive) {
-      if (this.keysP2.J!.isDown) this.player2.tryMove(-1, 0);
-      else if (this.keysP2.L!.isDown) this.player2.tryMove(1, 0);
-      else if (this.keysP2.I!.isDown) this.player2.tryMove(0, -1);
-      else if (this.keysP2.K!.isDown) this.player2.tryMove(0, 1);
-      if (Phaser.Input.Keyboard.JustDown(this.keysP2.SPACE!)) this.player2.placeBomb();
-      if (Phaser.Input.Keyboard.JustDown(this.keysP2.O!)) this.player2.placePierceBomb();
-      if (Phaser.Input.Keyboard.JustDown(this.keysP2.U!)) this.player2.placeOrDetonateRemoteBomb();
+    // Each player asks its controller for a command and executes it.
+    // The controller could be keyboard, AI, or anything else.
+    for (const player of this.players) {
+      player.update();
     }
 
     for (const bomb of this.bombs.values()) {
@@ -93,30 +87,40 @@ export default class GameScene extends Phaser.Scene {
   // ── HUD ──────────────────────────────────────────────────────────────────
 
   private createHud() {
-    const hudY = GRID_ROWS * TILE_SIZE + HUD_HEIGHT / 2;
-    const style: Phaser.Types.GameObjects.Text.TextStyle = {
-      fontSize: '13px',
-      color: '#aaaaaa',
-      fontFamily: 'monospace',
-    };
+    const w = GRID_COLS * TILE_SIZE;
+    const topY = GRID_ROWS * TILE_SIZE + 10;
+    const botY = GRID_ROWS * TILE_SIZE + HUD_HEIGHT - 6;
 
-    this.hudP1 = this.add.text(8, hudY, '', style).setOrigin(0, 0.5).setDepth(100);
-    this.hudP2 = this.add.text(GRID_COLS * TILE_SIZE - 8, hudY, '', style)
-      .setOrigin(1, 0.5).setDepth(100);
+    this.hudTexts = this.players.map((_, i) => {
+      const isLeft = i === 0 || i === 3;  // P1 top-left, P4 bottom-left
+      const isTop = i === 0 || i === 2;   // P1 & P3 on top row
+      const x = isLeft ? 8 : w - 8;
+      const y = isTop ? topY : botY;
+      const color = PLAYER_COLORS[i]!;
+
+      return this.add.text(x, y, '', {
+        fontSize: '11px',
+        color,
+        fontFamily: 'monospace',
+      }).setOrigin(isLeft ? 0 : 1, 0).setDepth(100);
+    });
   }
 
   private buildHudString(player: Player): string {
-    const parts: string[] = [];
-    parts.push(`Bombs: ${player.maxBombs}`);
-    if (player.pierceBombs > 0) parts.push(`Pierce: ${player.pierceBombs}`);
-    if (player.remoteBombs > 0) parts.push(`Remote: ${player.remoteBombs}`);
+    const name = PLAYER_NAMES[player.playerIndex]!;
+    const parts: string[] = [name];
+    parts.push(`B:${player.maxBombs}`);
+    if (player.pierceBombs > 0) parts.push(`Pi:${player.pierceBombs}`);
+    if (player.remoteBombs > 0) parts.push(`Rm:${player.remoteBombs}`);
     if (player.cursed) parts.push('CURSED');
-    return parts.join('  ');
+    if (!player.alive) parts.push('DEAD');
+    return parts.join(' ');
   }
 
   private updateHud() {
-    this.hudP1.setText(this.buildHudString(this.player1));
-    this.hudP2.setText(this.buildHudString(this.player2));
+    for (let i = 0; i < this.players.length; i++) {
+      this.hudTexts[i]!.setText(this.buildHudString(this.players[i]!));
+    }
   }
 
   // ── Home button ──────────────────────────────────────────────────────────
@@ -157,15 +161,17 @@ export default class GameScene extends Phaser.Scene {
       }
     }
 
-    const p2c = GRID_COLS - 2;
-    const p2r = GRID_ROWS - 2;
+    const rc = GRID_COLS - 2;
+    const br = GRID_ROWS - 2;
     const safe = new Set([
-      '1,1',
-      '2,1',
-      '1,2',
-      `${p2c},${p2r}`,
-      `${p2c - 1},${p2r}`,
-      `${p2c},${p2r - 1}`,
+      // Top-left (P1)
+      '1,1', '2,1', '1,2',
+      // Bottom-right (P2)
+      `${rc},${br}`, `${rc - 1},${br}`, `${rc},${br - 1}`,
+      // Top-right (P3)
+      `${rc},1`, `${rc - 1},1`, `${rc},2`,
+      // Bottom-left (P4)
+      `1,${br}`, `2,${br}`, `1,${br - 1}`,
     ]);
 
     for (let row = 0; row < GRID_ROWS; row++) {
@@ -291,18 +297,13 @@ export default class GameScene extends Phaser.Scene {
 
   checkPlayerDeaths(tiles: { col: number; row: number }[], fromCursedBomb: boolean) {
     for (const { col, row } of tiles) {
-      if (this.player1.alive && this.player1.col === col && this.player1.row === row) {
-        if (fromCursedBomb) {
-          this.player1.applyCurseFromBomb();
-        } else {
-          this.player1.die();
-        }
-      }
-      if (this.player2.alive && this.player2.col === col && this.player2.row === row) {
-        if (fromCursedBomb) {
-          this.player2.applyCurseFromBomb();
-        } else {
-          this.player2.die();
+      for (const player of this.players) {
+        if (player.alive && player.col === col && player.row === row) {
+          if (fromCursedBomb) {
+            player.applyCurseFromBomb();
+          } else {
+            player.die();
+          }
         }
       }
     }
@@ -311,16 +312,16 @@ export default class GameScene extends Phaser.Scene {
 
   checkGameOver() {
     if (this.gameOver) return;
-    const p1Dead = !this.player1.alive;
-    const p2Dead = !this.player2.alive;
-    if (!p1Dead && !p2Dead) return;
+    const alive = this.players.filter(p => p.alive);
+    if (alive.length > 1) return;
 
     this.gameOver = true;
 
     const cx = (GRID_COLS * TILE_SIZE) / 2;
     const cy = (GRID_ROWS * TILE_SIZE) / 2;
-    const message =
-      p1Dead && p2Dead ? 'Draw!' : p1Dead ? 'Player 2 Wins!' : 'Player 1 Wins!';
+    const message = alive.length === 0
+      ? 'Draw!'
+      : `${PLAYER_NAMES[alive[0]!.playerIndex]} Wins!`;
 
     this.add
       .text(cx, cy, message, {

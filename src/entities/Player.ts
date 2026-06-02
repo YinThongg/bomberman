@@ -16,6 +16,7 @@ import {
 import Bomb from './Bomb';
 import type { BombType } from './Bomb';
 import type GameScene from '../scenes/GameScene';
+import type { InputController, PlayerCommand } from '../input/InputController';
 
 const SPRITE_SIZE = TILE_SIZE * 0.82;
 
@@ -23,6 +24,9 @@ type SkullEffect = 'slow' | 'reverse' | 'mini_range';
 
 export default class Player {
   scene: GameScene;
+  controller: InputController;
+  playerIndex: number;
+  bombSpriteKey: string;
   col: number;
   row: number;
   maxBombs: number;
@@ -44,8 +48,11 @@ export default class Player {
   private curseTween: Phaser.Tweens.Tween | null;
   private savedRange: number;
 
-  constructor(scene: GameScene, gridCol: number, gridRow: number, spriteKey: string, maxBombs = 1) {
+  constructor(scene: GameScene, gridCol: number, gridRow: number, spriteKey: string, bombSpriteKey: string, controller: InputController, playerIndex: number, maxBombs = 1) {
     this.scene = scene;
+    this.controller = controller;
+    this.playerIndex = playerIndex;
+    this.bombSpriteKey = bombSpriteKey;
     this.col = gridCol;
     this.row = gridRow;
     this.maxBombs = maxBombs;
@@ -68,6 +75,24 @@ export default class Player {
 
     const { x, y } = this.toPixel();
     this.sprite = scene.add.image(x, y, spriteKey).setDisplaySize(SPRITE_SIZE, SPRITE_SIZE);
+  }
+
+  /**
+   * Called once per tick by GameScene.
+   * Asks the controller for a command, then executes it.
+   * This is the ONLY method GameScene needs to call for player actions.
+   */
+  update() {
+    if (!this.alive) return;
+    const cmd = this.controller.getCommand();
+
+    if (cmd.direction) {
+      this.tryMove(cmd.direction.dx, cmd.direction.dy);
+    }
+
+    if (cmd.bombAction === 'normal') this.placeBomb();
+    else if (cmd.bombAction === 'pierce') this.placePierceBomb();
+    else if (cmd.bombAction === 'remote') this.placeOrDetonateRemoteBomb();
   }
 
   die() {

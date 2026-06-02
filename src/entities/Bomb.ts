@@ -39,7 +39,7 @@ export default class Bomb {
     let bombKey: string;
     if (bombType === 'pierce') bombKey = 'bomb_pierce';
     else if (bombType === 'remote') bombKey = 'bomb_remote';
-    else bombKey = owner === scene.player1 ? 'bomb_blue' : 'bomb_red';
+    else bombKey = owner.bombSpriteKey;
 
     this.sprite = scene.add
       .image(x, y, bombKey)
@@ -106,10 +106,7 @@ export default class Bomb {
   }
 
   private isPlayerAt(col: number, row: number): boolean {
-    const p1 = this.scene.player1;
-    const p2 = this.scene.player2;
-    return (p1.alive && p1.col === col && p1.row === row) ||
-           (p2.alive && p2.col === col && p2.row === row);
+    return this.scene.players.some(p => p.alive && p.col === col && p.row === row);
   }
 
   private snapToGrid() {

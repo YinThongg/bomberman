@@ -57,4 +57,4 @@ export const PIERCE_BOMBS_PER_PICKUP = 3;
 export const REMOTE_BOMBS_PER_PICKUP = 3;
 export const SKULL_DURATION = 30_000;
 export const SKULL_SLOW_COOLDOWN = 320;
-export const HUD_HEIGHT = 36;
+export const HUD_HEIGHT = 40;
