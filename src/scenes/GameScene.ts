@@ -17,6 +17,7 @@ import PowerUp from '../entities/PowerUp';
 import type Bomb from '../entities/Bomb';
 import KeyboardInput, { P1_KEYS, P2_KEYS } from '../input/KeyboardInput';
 import NullInput from '../input/NullInput';
+import AIInput from '../ai/AIInput';
 
 const PLAYER_NAMES = ['P1', 'P2', 'P3', 'P4'];
 const PLAYER_COLORS = ['#4488ff', '#ff4444', '#dddddd', '#ffaa00'];
@@ -47,15 +48,18 @@ export default class GameScene extends Phaser.Scene {
 
     const kb1 = new KeyboardInput(this, P1_KEYS);
     const kb2 = new KeyboardInput(this, P2_KEYS);
-    const ai3 = new NullInput();  // placeholder — will become AIInput
-    const ai4 = new NullInput();  // placeholder — will become AIInput
+    const nullInput = new NullInput(); // temporary, replaced below
 
     this.players = [
       new Player(this, 1, 1, 'player_blue', 'bomb_blue', kb1, 0),                              // top-left
       new Player(this, GRID_COLS - 2, GRID_ROWS - 2, 'player_red', 'bomb_red', kb2, 1),         // bottom-right
-      new Player(this, GRID_COLS - 2, 1, 'player_white', 'bomb_white', ai3, 2),                  // top-right
-      new Player(this, 1, GRID_ROWS - 2, 'player_yellow', 'bomb_yellow', ai4, 3),                // bottom-left
+      new Player(this, GRID_COLS - 2, 1, 'player_white', 'bomb_white', nullInput, 2),            // top-right (AI)
+      new Player(this, 1, GRID_ROWS - 2, 'player_yellow', 'bomb_yellow', nullInput, 3),          // bottom-left (AI)
     ];
+
+    // Wire up AI controllers (they need a reference to the player they control)
+    this.players[2]!.controller = new AIInput(this.players[2]!, this);
+    this.players[3]!.controller = new AIInput(this.players[3]!, this);
 
     this.keyRestart = this.input.keyboard!.addKey('R');
 
